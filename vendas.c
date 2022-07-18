@@ -1,3 +1,24 @@
+/**
+ * O objetivo do programa é criar uma interface para acompanhar registros de 
+ * vendas com os seguintes campos: codigo_vendedor, nome_vendedor,
+ * valor_da_venda, mes.
+ * 
+ * A interface precisa ter as seguintes funcionalidades, listadas no enunciado:
+ * 
+ * 1- Criar um arquivo de dados
+ * 2- Incluir um determinado registro no arquivo
+ * 3- Excluir um registro do arquivo
+ * 4- Alterar o valor de uma venda no arquivo
+ * 5- Imprimir os registros na saída padrão
+ * 6- Excluir o arquivo de dados
+ * 7- Finalizar o programa
+ * 
+ * Os registros devem estar ordenados por código e mês, e nao deve haver
+ * mais de um registro com as mesmas informações nesses dois campos. 
+ * 
+ * Quaisquer outros detalhes do funcionamento vieram da minha interpretação :)
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
