@@ -34,19 +34,19 @@ typedef struct _VENDA {
 void printMenu (void);
 void getStr (char *string);
 Venda lerVenda (void);
-int checkVenda (Venda *p);
-void incluirRegistro (Venda **lista);
+void IncluirNoInicio (Venda **lista, Venda novaVenda);
+void incluirRegistro (Venda *lista, Venda novaVenda);
 void mostrarRegistro (Venda registro);
 void imprimirRegistros (Venda *lista);
-void excluirVendedor (Venda **lista);
+void excluirVendedor (Venda **lista, int codigo);
 void alterarVenda (Venda **lista);
 
 int main (void)
 {
-    int cod;
+    int cod, coddel;
     char nomeArq[50];
     FILE *fsave;
-    Venda *vendas = NULL, *iterador;
+    Venda *head = NULL, *iterador, vendaAux;
 
     printf("Insira o nome do arquivo de onde deseja carregar os dados (0 para nao carregar):\n>");
     getStr(nomeArq);
@@ -62,34 +62,32 @@ int main (void)
         {
             if(!feof(fsave))
             {
-                vendas = malloc (sizeof(Venda));
-                if(!checkVenda(vendas))
+                if((head = malloc (sizeof(Venda))) == NULL)
                 {
                     puts("Erro ao carregar arquivo\n");
                     return 1;
                 }
-                fread(&(vendas->cod_vendedor), sizeof(int), 1, fsave);
-                fread(vendas->nome_vendedor, 50 * sizeof(char), 1, fsave);
-                fread(&(vendas->valor_venda), sizeof(float), 1, fsave);
-                fread(&(vendas->mes), sizeof(int), 1, fsave);
+                fread(&(head->cod_vendedor), sizeof(int), 1, fsave);
+                fread(head->nome_vendedor, 50 * sizeof(char), 1, fsave);
+                fread(&(head->valor_venda), sizeof(float), 1, fsave);
+                fread(&(head->mes), sizeof(int), 1, fsave);
             }
-            vendas->next = malloc(sizeof(Venda));
-            if(!checkVenda(vendas->next))
+
+            if((head->next = malloc(sizeof(Venda))) == NULL)
             {
                 puts("Erro ao carregar arquivo\n");
                 return 1;
             }
-            iterador = vendas;
+            iterador = head;
             while(!feof(fsave))
             {
                 fread(&(iterador->next->cod_vendedor), sizeof(int), 1, fsave);
                 if (feof(fsave)) break;
                 fread(iterador->next->nome_vendedor, 50 * sizeof(char), 1, fsave);
                 fread(&(iterador->next->valor_venda), sizeof(float), 1, fsave);
-                fread(&(vendas->next->mes), sizeof(int), 1, fsave);
+                fread(&(head->next->mes), sizeof(int), 1, fsave);
 
-                iterador->next->next = malloc(sizeof(Venda));
-                if(!checkVenda(iterador->next->next))
+                if((iterador->next->next = malloc(sizeof(Venda))) == NULL)
                 {
                     puts("Erro no carregamento dos dados...\n");
                     return 1;
@@ -122,16 +120,26 @@ int main (void)
                 fclose(fsave);
                 break;
             case 2:
-                incluirRegistro(&vendas);
+                vendaAux = lerVenda ();
+                if (head == NULL || head->mes > vendaAux.mes || (head->mes == vendaAux.mes && head->cod_vendedor > vendaAux.cod_vendedor))
+                    IncluirNoInicio(&head, vendaAux);
+                else
+                    incluirRegistro(head, vendaAux);
                 break;
             case 3:
-                excluirVendedor(&vendas);
+                printf("Insira o codigo do vendedor a ser excluido:\n>");
+                while (!scanf("%d", &coddel))
+                {
+                    while (getchar() != '\n');
+                    puts("Erro: insira apenas numeros");
+                }
+                excluirVendedor(&head, coddel);
                 break;
             case 4:
-                alterarVenda(&vendas);
+                alterarVenda(&head);
                 break;
             case 5:
-                imprimirRegistros(vendas);
+                imprimirRegistros(head);
                 break;
             case 6:
                 printf("Insira o nome do arquivo a deletar:\n>");
@@ -158,7 +166,7 @@ int main (void)
                     return 1;
                 }
 
-                iterador = vendas;
+                iterador = head;
                 
                 while (iterador != NULL)
                 {
@@ -232,86 +240,58 @@ Venda lerVenda (void)
     return atual;
 }
 
-int checkVenda (Venda *p)
+void IncluirNoInicio (Venda **lista, Venda novaVenda)
 {
-    if (p == NULL)
-        return 0;
-    else
-        return 1;
+    Venda *temp = *lista;
+
+    if (((*lista = malloc (sizeof(Venda))) == NULL))
+    {
+        puts("Nao foi possivel incluir a venda.");
+    }
+
+    **lista = novaVenda;
+    (*lista)->next = temp;
+
+    puts("Registro inserido com sucesso!!\n");
 }
 
-void incluirRegistro (Venda **lista)
+void incluirRegistro (Venda *lista, Venda novaVenda)
 {
-    Venda novoRegistro, *temp, *iterator;
-
-    novoRegistro = lerVenda();
-
-    if (*lista == NULL)
+    Venda *temp, *iterator;
+    
+    if (lista->cod_vendedor == novaVenda.cod_vendedor && lista->mes == novaVenda.mes)
     {
-        *lista = malloc(sizeof(Venda));
-        if (!checkVenda(*lista))
-        {
-            puts("Erro: nao foi possivel inserir o registro\n");
-            return;
-        }
-
-        **lista = novoRegistro;
-        (*lista)->next = NULL;
-        
-        puts("Registro inserido com sucesso!!\n");
+        puts("Erro: ja existe uma venda com esse codigo de vendedor nesse mes.\n");
         return;
     }
-    else if ((*lista)->mes > novoRegistro.mes || ((*lista)->mes == novoRegistro.mes && (*lista)->cod_vendedor > novoRegistro.cod_vendedor))
+
+    iterator = lista;
+
+    while (iterator->next != NULL && novaVenda.mes > iterator->next->mes)
+        iterator = iterator->next;
+    while (iterator->next != NULL && novaVenda.cod_vendedor > iterator->next->cod_vendedor)
+    {    
+        if (novaVenda.mes != iterator->next->mes) break;
+        iterator = iterator->next;
+    }
+    if (iterator->next != NULL && novaVenda.cod_vendedor == iterator->next->cod_vendedor && novaVenda.mes == iterator->next->mes)
     {
-        temp = *lista;
-        *lista = malloc(sizeof(Venda));
-
-        if (!checkVenda(*lista))
-        {
-            puts("Erro: nao foi possivel inserir o registro\n");
-            return;
-        }
-
-        **lista = novoRegistro;
-        (*lista)->next = temp;
-        
-        puts("Registro inserido com sucesso!!\n");
+        puts("Erro: ja existe uma venda com esse codigo de vendedor nesse mes.\n");
         return;
     }
-    else
+
+    temp = iterator->next;
+    if ((iterator->next = malloc(sizeof(Venda))) == NULL)
     {
-        iterator = *lista;
-        while (iterator->next != NULL && novoRegistro.mes > iterator->next->mes)
-        {
-            iterator = iterator->next;
-        }
-        while (iterator->next != NULL && novoRegistro.cod_vendedor > iterator->next->cod_vendedor)
-        {
-            iterator = iterator->next;
-        }
-
-        if (iterator->next != NULL && novoRegistro.cod_vendedor == iterator->next->cod_vendedor && novoRegistro.mes == iterator->next->mes)
-        {
-            puts("Erro: ja existe uma venda com esse codigo de vendedor nesse mes.\n");
-            return;
-        }
-
-        temp = iterator->next;
-        iterator->next = malloc(sizeof(Venda));
-
-        if (!checkVenda(iterator->next))
-        {
-            puts("Erro: nao foi possivel inserir o registro\n");
-            iterator->next = temp;
-            return;
-        }
-
-        *(iterator->next) = novoRegistro;
-        iterator->next->next = temp;
-        
-        puts("Registro inserido com sucesso!!\n");
+        puts("Erro: nao foi possivel inserir o registro\n");
+        iterator->next = temp;
         return;
     }
+
+    *(iterator->next) = novaVenda;
+    iterator->next->next = temp;
+    
+    puts("Registro inserido com sucesso!!\n");
 }
 
 void mostrarRegistro (Venda registro)
@@ -331,6 +311,7 @@ void imprimirRegistros (Venda *lista)
     if (iterator == NULL)
     {
         puts("Nao ha registros.\n");
+        return;
     }
     while (iterator != NULL)
     {
@@ -339,17 +320,9 @@ void imprimirRegistros (Venda *lista)
     }
 }
 
-void excluirVendedor (Venda **lista)
+void excluirVendedor (Venda **lista, int codigo)
 {
     Venda *iterator, *temp;
-    int codigo;
-
-    printf("Insira o codigo do vendedor a ser excluido:\n>");
-    while (!scanf("%d", &codigo))
-    {
-        while (getchar() != '\n');
-        puts("Erro: insira apenas numeros");
-    }
 
     if (*lista == NULL)
     {
