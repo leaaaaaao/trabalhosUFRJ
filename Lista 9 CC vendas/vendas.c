@@ -60,42 +60,26 @@ int main (void)
         }
         else
         {
+            fread(&(vendaAux.cod_vendedor), sizeof(int), 1, fsave);
             if(!feof(fsave))
             {
-                if((head = malloc (sizeof(Venda))) == NULL)
-                {
-                    puts("Erro ao carregar arquivo\n");
-                    return 1;
-                }
-                fread(&(head->cod_vendedor), sizeof(int), 1, fsave);
-                fread(head->nome_vendedor, 50 * sizeof(char), 1, fsave);
-                fread(&(head->valor_venda), sizeof(float), 1, fsave);
-                fread(&(head->mes), sizeof(int), 1, fsave);
+                fread(vendaAux.nome_vendedor, 50 * sizeof(char), 1, fsave);
+                fread(&(vendaAux.valor_venda), sizeof(float), 1, fsave);
+                fread(&(vendaAux.mes), sizeof(int), 1, fsave);
+                vendaAux.next = NULL;
+                IncluirNoInicio(&head, vendaAux);
             }
 
-            if((head->next = malloc(sizeof(Venda))) == NULL)
+            while(1)
             {
-                puts("Erro ao carregar arquivo\n");
-                return 1;
-            }
-            iterador = head;
-            while(!feof(fsave))
-            {
-                fread(&(iterador->next->cod_vendedor), sizeof(int), 1, fsave);
+                fread(&(vendaAux.cod_vendedor), sizeof(int), 1, fsave);
                 if (feof(fsave)) break;
-                fread(iterador->next->nome_vendedor, 50 * sizeof(char), 1, fsave);
-                fread(&(iterador->next->valor_venda), sizeof(float), 1, fsave);
-                fread(&(head->next->mes), sizeof(int), 1, fsave);
-
-                if((iterador->next->next = malloc(sizeof(Venda))) == NULL)
-                {
-                    puts("Erro no carregamento dos dados...\n");
-                    return 1;
-                }
-                iterador = iterador->next;
+                fread(vendaAux.nome_vendedor, 50 * sizeof(char), 1, fsave);
+                fread(&(vendaAux.valor_venda), sizeof(float), 1, fsave);
+                fread(&(vendaAux.mes), sizeof(int), 1, fsave);
+                vendaAux.next = NULL;
+                incluirRegistro(head, vendaAux);
             }
-            free(iterador->next);
-            iterador->next = NULL;
         }
         fclose(fsave);
     }
