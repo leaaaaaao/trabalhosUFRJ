@@ -54,7 +54,7 @@ void mostrarBloco (Bloco *atual);
 void listarBlocos (Condominio *condo);
 Bloco lerBloco (void);
 void adicionarBlocoNoInicio (Condominio *condo, Bloco *novoBloco);
-void adicionarBloco (Condominio *condo);
+void adicionarBloco (Condominio *condo, Bloco novo);
 void deletarBloco (Condominio *atual, int numdel);
 void menuCondominio (void);
 void visualizar (Condominio *lista, char *nome);
@@ -62,9 +62,10 @@ void visualizar (Condominio *lista, char *nome);
 /*-------------------------------------------------------------------------------------------------------------------*/
 int main (void)
 {
-    int cod;
+    int cod, i;
     char nomecondo[30];
     Condominio *head = NULL, *iterador, condos;
+    Bloco *iteradorB, carregaBloco;
     FILE *fp_save;
     char nomedel[30];
 
@@ -76,18 +77,36 @@ int main (void)
         {
             fread(&condos.endereco, sizeof(Endereco), 1, fp_save);
             fread(&condos.nblocos, sizeof(int), 1, fp_save);
-            /* FALTA LER OS BLOCOS */
             condos.blocos = NULL;
             condos.next = NULL;
+
+            
+            for (i = 0; i < condos.nblocos; i++)
+            {
+                fread(&carregaBloco.nbloco, sizeof(int), 1, fp_save);
+                fread(&carregaBloco.qtdapto, sizeof(int), 1, fp_save);
+                fread(&carregaBloco.andares, sizeof(int), 1, fp_save);
+                carregaBloco.next = NULL;
+                adicionarBloco(&condos, carregaBloco);
+            }
             inserirNoInicio(&head, condos);
         }
         while (fread(condos.nome, sizeof(char) * 30, 1, fp_save) == 1)
         {
             fread(&(condos.endereco), sizeof(Endereco), 1, fp_save);
             fread(&(condos.nblocos), sizeof(int), 1, fp_save);
-            /* FALTA LER OS BLOCOS */
             condos.blocos = NULL;
             condos.next = NULL;
+
+            for (i = 0; i < condos.nblocos; i++)
+            {
+                fread(&carregaBloco.nbloco, sizeof(int), 1, fp_save);
+                fread(&carregaBloco.qtdapto, sizeof(int), 1, fp_save);
+                fread(&carregaBloco.andares, sizeof(int), 1, fp_save);
+                carregaBloco.next = NULL;
+                adicionarBloco(&condos, carregaBloco);
+            }
+
             inserirCondominio(head, condos);
         }
         fclose(fp_save);
@@ -142,7 +161,17 @@ int main (void)
                     fwrite(&(iterador->nome), sizeof(char) * 30, 1, fp_save);
                     fwrite(&(iterador->endereco), sizeof(Endereco), 1, fp_save);
                     fwrite(&(iterador->nblocos), sizeof(int), 1, fp_save);
-                    /* FALTA ESCREVER OS BLOCOS EM SI */
+                    iteradorB = iterador->blocos;
+
+                    for (i = 0; i < iterador->nblocos; i++)
+                    {
+                        fwrite(&(iteradorB->nbloco), sizeof(int), 1, fp_save);
+                        fwrite(&(iteradorB->qtdapto), sizeof(int), 1, fp_save);
+                        fwrite(&(iteradorB->andares), sizeof(int), 1, fp_save);
+
+                        iteradorB = iteradorB->next;
+                    }
+                    
                     iterador = iterador->next;
                 }
                 puts("Encerrando...");
@@ -193,6 +222,7 @@ int getInt (void)
         x = 0;
         fgets (num, 20, stdin);
         len = strlen(num);
+        
         for (i = 0; i < len - 1; i++) /* Subtraí um para não contar o \n, que a fgets inclui */
         {
             if (num[i] < '0' || num[i] > '9')
@@ -313,6 +343,7 @@ void inserirNoInicio (Condominio **lista, Condominio novoCond)
     }
     **lista = novoCond;
     (*lista)->next = temp;
+    puts("Condominio inserido com sucesso.\n");
 }
 
 void inserirCondominio (Condominio *lista, Condominio novoCond)
@@ -342,6 +373,7 @@ void inserirCondominio (Condominio *lista, Condominio novoCond)
     
     *(iterator->next) = novoCond;
     iterator->next->next = temp;
+    puts("Condominio inserido com sucesso.\n");
 }
 
 void mostrarCondominio (Condominio *atual)
@@ -410,7 +442,7 @@ void deletarCondominio (Condominio **lista, char *nomedel)
 
 void mostrarBloco (Bloco *atual)
 {
-    printf("Bloco %d: %d andares, %d apartamentos por andar\n", atual->nbloco, atual->andares, (atual->qtdapto / atual->andares));
+    printf("Bloco %d: %d andares, %d apartamentos por andar (total de %d apartamentos)\n", atual->nbloco, atual->andares, (atual->qtdapto / atual->andares), atual->qtdapto);
 }
 
 void listarBlocos (Condominio *condo)
@@ -468,15 +500,13 @@ void adicionarBlocoNoInicio (Condominio *condo, Bloco *novoBloco)
 
     *(condo->blocos) = *novoBloco;
     condo->blocos->next = temp;
+    puts("Bloco inserido com sucesso!!\n");
 }
 
-void adicionarBloco (Condominio *condo)
+void adicionarBloco (Condominio *condo, Bloco novo)
 {
-    Bloco novo;
     Bloco *iterator, *temp;
-    condo->nblocos++;
 
-    novo = lerBloco();
     iterator = condo->blocos;
 
     if (condo->blocos == NULL || novo.nbloco < condo->blocos->nbloco)
@@ -502,6 +532,7 @@ void adicionarBloco (Condominio *condo)
 
     *(iterator->next) = novo;
     iterator->next->next = temp;
+    puts("Bloco inserido com sucesso!!\n");
 }
 
 void deletarBloco (Condominio *atual, int numdel)
@@ -554,6 +585,7 @@ void menuCondominio (void)
 void visualizar (Condominio *lista, char *nome)
 {
     Condominio * iterator = lista;
+    Bloco novoBloco;
     char novoNome[30];
     int option = 1, numeroADeletar;
 
@@ -594,7 +626,9 @@ void visualizar (Condominio *lista, char *nome)
 
             break;
         case 2:
-            adicionarBloco(iterator);
+            novoBloco = lerBloco();
+            iterator->nblocos++;
+            adicionarBloco(iterator, novoBloco);
 
             break;
         case 3:
