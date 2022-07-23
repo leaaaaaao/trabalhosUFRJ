@@ -17,7 +17,7 @@
 /* Estruturas */
 typedef struct _ENDERECO {
     int CEP;
-    char UF[3];
+    char UF[4];
     char cidade[30];
     char bairro[30];
     char rua[30];
@@ -39,6 +39,7 @@ typedef struct _CONDOMINIO {
 
 /* Protótipos */
 void menuPrincipal(void);
+void ajuda (void);
 void getStr (char *string);
 int getInt (void);
 Endereco lerEndereco (void);
@@ -49,6 +50,7 @@ void inserirCondominio (Condominio *lista, Condominio novoCond);
 void inserirNoInicio (Condominio **lista, Condominio novoCond);
 void mostrarCondominio (Condominio *atual);
 void listarCondominios (Condominio *lista);
+void filtrar (Condominio *lista);
 void deletarCondominio (Condominio **lista, char *nomedel);
 void mostrarBloco (Bloco *atual);
 void listarBlocos (Condominio *condo);
@@ -70,7 +72,7 @@ int main (void)
     char nomedel[30];
 
 
-    if ((fp_save = fopen("save", "rb")) != NULL)        /* Carrega os dados do arquivo de save */
+    if ((fp_save = fopen("save.bin", "rb")) != NULL)        /* Carrega os dados do arquivo de save */
     {
         fread(condos.nome, sizeof(char) * 30, 1, fp_save);
         if (!feof(fp_save))
@@ -145,10 +147,10 @@ int main (void)
 
                 break;
             case 5:
-                
+                filtrar(head);
                 break;
             case 6:
-                if ((fp_save = fopen ("save", "wb")) == NULL)
+                if ((fp_save = fopen ("save.bin", "wb")) == NULL)
                 {
                     puts("Erro ao salvar :(");
                     return 1;
@@ -178,6 +180,7 @@ int main (void)
 
                 return 0;
             case 7:
+                ajuda();
 
                 break;
             default:
@@ -200,6 +203,18 @@ void menuPrincipal(void)
     puts("5. Filtrar condominios");
     puts("6. Salvar e sair");
     puts("7. Ajuda");
+}
+
+void ajuda (void)
+{
+    puts("\n\n1. Le os dados de um condominio e o insere nos registros. Nao pode haver mais de um condominio com o mesmo nome. Insira apenas dois caracteres no campo UF");
+    puts("2. Mostra o nome e endereço de todos os condominios");
+    puts("3. Pede um nome e deleta o condominio que tiver esse nome");
+    puts("4. Mostra os blocos do condominio, tambem selecionado pelo nome, e permite manipular esses blocos");
+    puts("5. Filtra os condominios por estado, mostrando apenas os pertencentes ao UF escolhido");
+    puts("6. Encerra o programa e guarda os dados");
+    puts("7. Abre esse menu :)");
+    puts("Qualquer outra tecla encerra o programa sem salvar\n\n");
 }
 
 void getStr (char *string)
@@ -248,7 +263,12 @@ Endereco lerEndereco (void)
     puts("-----ENDERECO-----");
 
     printf("UF:\n>");
-    getStr(ans.UF);
+    do
+    {
+        fgets(ans.UF, 4, stdin);
+    }
+    while (strlen(ans.UF) != 3);
+    ans.UF[2] = '\0';
     
     printf("Cidade:\n>");
     getStr(ans.cidade);
@@ -401,8 +421,39 @@ void listarCondominios (Condominio *lista)
     }
 }
 
+void filtrar (Condominio *lista)
+{
+    Condominio *iterator;
+    char ufpedido[4];
+
+
+    puts("Insira o UF desejado (Apenas 2 caracteres):");
+    do
+    {
+        fgets(ufpedido, 4, stdin);
+    }
+    while (strlen(ufpedido) != 3);
+    ufpedido[2] = '\0';
+
+    iterator = lista;
+    
+    if (iterator == NULL)
+    {
+        puts("Nao ha condominios para mostrar.\n");
+        return;
+    }
+    while(iterator != NULL)
+    {
+        if (!strCompareUpper(iterator->endereco.UF, ufpedido))
+            mostrarCondominio(iterator);
+        
+        iterator = iterator->next;
+    }
+}
+
 void deletarCondominio (Condominio **lista, char *nomedel)
 {
+    Bloco *bTemp, *bIterator;
     Condominio *iterator, *temp;
 
     if (*lista == NULL)
@@ -411,8 +462,17 @@ void deletarCondominio (Condominio **lista, char *nomedel)
         return;
     }
 
+    bIterator = (*lista)->blocos;
+
     if (!strCompareUpper((*lista)->nome, nomedel))
     {
+        while (bIterator != NULL)
+        {
+            bTemp = bIterator->next;
+            free(bIterator);
+            bIterator = bTemp;
+            puts("Bloco apagado com sucesso!!\n");
+        }
         temp = (*lista)->next;
         free(*lista);
         *lista = temp;
@@ -426,6 +486,13 @@ void deletarCondominio (Condominio **lista, char *nomedel)
     {
         if (!strCompareUpper(iterator->next->nome, nomedel))
         {
+            while (bIterator != NULL)
+            {
+                bTemp = bIterator->next;
+                free(bIterator);
+                bIterator = bTemp;
+                puts("Bloco apagado com sucesso!!\n");
+            }
             temp = iterator->next->next;
             free(iterator->next);
             iterator->next = temp;
@@ -561,7 +628,7 @@ void deletarBloco (Condominio *atual, int numdel)
         iterator = iterator->next;
     }
 
-    if (iterator->next->nbloco == numdel)
+    if (iterator->next != NULL && iterator->next->nbloco == numdel)
     {
         temp = iterator->next->next;
         free(iterator->next);
