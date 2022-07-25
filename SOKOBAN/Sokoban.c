@@ -149,7 +149,10 @@ int main (void)
 
                 puts ("Q para sair da fase (durante o jogo) ou sair do jogo (no menu principal)");
                 puts ("R para reiniciar a fase");
-                puts ("H para esse menu :D");
+                puts ("H para esse menu :D\n");
+                puts ("O objetivo do jogo eh empurrar todas as caixas ( () ) para as zonas demarcadas ( \033[1;36m[]\033[m )");
+                puts ("Voce so pode empurrar uma caixa por vez");
+                puts ("Quando todas as caixas estiverem nas posicoes certas, ( \033[1;32m()\033[m ) o jogo esta ganho");
             }
         }
         while (faseEscolhida < '0' || faseEscolhida > '5');
